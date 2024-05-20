@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>fondo_azul.jpg</file>
+        <file>buque_vertical.png</file>
+        <file>buque_horizontal.png</file>
+    </qresource>
+</RCC>
