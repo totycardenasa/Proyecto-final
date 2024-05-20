@@ -3,6 +3,7 @@
 
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
+#include <QGraphicsRectItem>
 #include <QList>
 #include <QGraphicsSceneMouseEvent>
 #include "buque.h"
@@ -17,6 +18,16 @@ struct BuqueDetalles {
     int vida;
 };
 
+// Estructura para asociar el buque con sus detalles
+struct BuqueConDetalles {
+    Buque* buque;
+    BuqueDetalles detalles;
+
+    bool operator==(const BuqueConDetalles &other) const {
+        return buque == other.buque;
+    }
+};
+
 class firstScn : public QGraphicsScene
 {
     Q_OBJECT
@@ -24,13 +35,14 @@ public:
     firstScn(MainWindow *parent = nullptr);
 
 protected:
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
 private:
     MainWindow *mainWindow;
     QGraphicsPixmapItem *telon;  // Puntero al telón
-    QList<Buque*> buques; // Declaración correcta para contener múltiples objetos Buque
-    QList<QGraphicsRectItem*> cuadricula; // crear una lista de rectángulos (son cuadrados porque miden lo mismo de lado y lado)
+    QList<BuqueConDetalles> buques; // Lista que contiene los buques y sus detalles
+    QList<QGraphicsRectItem*> cuadricula; // Crear una lista de rectángulos (son cuadrados porque miden lo mismo de lado y lado)
+    int remainingClicks; // Contador para los clics válidos
 };
 
 #endif // FIRSTSCN_H
