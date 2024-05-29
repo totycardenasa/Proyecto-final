@@ -33,7 +33,7 @@ class firstScn : public QGraphicsScene
     Q_OBJECT
 public:
     firstScn(MainWindow *parent = nullptr);
-
+    int countRemainingBuques() const;
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
@@ -43,6 +43,7 @@ private:
     QList<BuqueConDetalles> buques; // Lista que contiene los buques y sus detalles
     QList<QGraphicsRectItem*> cuadricula; // Crear una lista de rectángulos (son cuadrados porque miden lo mismo de lado y lado)
     int remainingClicks; // Contador para los clics válidos
+
 };
 
 #endif // FIRSTSCN_H

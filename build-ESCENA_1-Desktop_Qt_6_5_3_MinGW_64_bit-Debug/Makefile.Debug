@@ -264,6 +264,7 @@ debug/moc_firstscn.cpp: ../ESCENA_1/firstscn.h \
 		C:/Qt/6.5.3/mingw_64/include/QtCore/qvarlengtharray.h \
 		C:/Qt/6.5.3/mingw_64/include/QtCore/q20memory.h \
 		C:/Qt/6.5.3/mingw_64/include/QtGui/qpainterpath.h \
+		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QGraphicsRectItem \
 		C:/Qt/6.5.3/mingw_64/include/QtCore/QList \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QGraphicsSceneMouseEvent \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/qgraphicssceneevent.h \
@@ -608,6 +609,7 @@ debug/firstscn.o: ../ESCENA_1/firstscn.cpp ../ESCENA_1/firstscn.h \
 		C:/Qt/6.5.3/mingw_64/include/QtCore/qvarlengtharray.h \
 		C:/Qt/6.5.3/mingw_64/include/QtCore/q20memory.h \
 		C:/Qt/6.5.3/mingw_64/include/QtGui/qpainterpath.h \
+		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QGraphicsRectItem \
 		C:/Qt/6.5.3/mingw_64/include/QtCore/QList \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QGraphicsSceneMouseEvent \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/qgraphicssceneevent.h \
@@ -653,7 +655,9 @@ debug/firstscn.o: ../ESCENA_1/firstscn.cpp ../ESCENA_1/firstscn.h \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/qlabel.h \
 		C:/Qt/6.5.3/mingw_64/include/QtGui/qpicture.h \
 		C:/Qt/6.5.3/mingw_64/include/QtGui/qtextdocument.h \
-		C:/Qt/6.5.3/mingw_64/include/QtCore/QDebug
+		C:/Qt/6.5.3/mingw_64/include/QtCore/QDebug \
+		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QLCDNumber \
+		C:/Qt/6.5.3/mingw_64/include/QtWidgets/qlcdnumber.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debug\firstscn.o ..\ESCENA_1\firstscn.cpp
 
 debug/main.o: ../ESCENA_1/main.cpp ../ESCENA_1/mainwindow.h \
@@ -1032,6 +1036,7 @@ debug/mainwindow.o: ../ESCENA_1/mainwindow.cpp ../ESCENA_1/mainwindow.h \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QGraphicsPixmapItem \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/qgraphicsitem.h \
 		C:/Qt/6.5.3/mingw_64/include/QtGui/qpainterpath.h \
+		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QGraphicsRectItem \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/QGraphicsSceneMouseEvent \
 		C:/Qt/6.5.3/mingw_64/include/QtWidgets/qgraphicssceneevent.h \
 		../ESCENA_1/buque.h

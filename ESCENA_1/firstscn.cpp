@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include "mainwindow.h"
 #include <QDebug>
+#include <QLCDNumber>
 
 firstScn::firstScn(MainWindow *parent)
     : QGraphicsScene(0, 0, 1350, 750, parent), mainWindow(parent), remainingClicks(50)
@@ -17,7 +18,7 @@ firstScn::firstScn(MainWindow *parent)
         {QPointF(1191, 153), 0.39, ":/buque_vertical.png", 6},
         {QPointF(304, 379), 0.39, ":/buque_horizontal.png", 6},
         {QPointF(891, 300), 0.39, ":/buque_vertical.png", 6},
-        {QPointF(314, 525), 0.19, ":/buque_vertical.png", 3},
+        {QPointF(314, 527), 0.19, ":/buque_vertical.png", 3},
         {QPointF(904, 23), 0.19, ":/buque_horizontal.png", 3}
     };
 
@@ -44,6 +45,18 @@ firstScn::firstScn(MainWindow *parent)
             QGraphicsRectItem *rect = addRect(j * 75, i * 75, 75, 75, QPen(Qt::white));
             rect->setZValue(1); // Colocar la cuadrícula sobre el telón
             cuadricula.append(rect);
+        }
+    }
+    if (mainWindow) {
+        QLCDNumber *balas = mainWindow->findChild<QLCDNumber*>("balas");
+        if (balas) {
+            balas->display(50);
+        }
+    }
+    if (mainWindow) {
+        QLCDNumber *barcos = mainWindow->findChild<QLCDNumber *>("barcos");
+        if (barcos) {
+            barcos->display(countRemainingBuques()); // Mostrar la cantidad de buques restantes
         }
     }
 }
@@ -94,10 +107,35 @@ void firstScn::mousePressEvent(QGraphicsSceneMouseEvent *event)
             }
 
             // Disminuir el contador de clics válidos
-            remainingClicks--;
+            remainingClicks--; // contiene el numero de balas y las disminuye
+
+            if (mainWindow) {
+                QLCDNumber *balas = mainWindow->findChild<QLCDNumber*>("balas");
+                if (balas) {
+                    balas->display(remainingClicks);
+                }
+            }
+
+            if (mainWindow) {
+                QLCDNumber *barcos = mainWindow->findChild<QLCDNumber *>("barcos");
+                if (barcos) {
+                    barcos->display(countRemainingBuques()); // Mostrar la cantidad de buques restantes
+                }
+            }
             return;
         }
     }
 
+
     QGraphicsScene::mousePressEvent(event);
+}
+
+int firstScn::countRemainingBuques() const {
+    int count = 0;
+    for (const auto &buqueConDetalles : buques) {
+        if (buqueConDetalles.detalles.vida > 0) {
+            count++;
+        }
+    }
+    return count;
 }
