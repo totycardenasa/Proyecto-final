@@ -6,7 +6,9 @@
 #include <QGraphicsRectItem>
 #include <QList>
 #include <QGraphicsSceneMouseEvent>
+#include <QPropertyAnimation>
 #include "buque.h"
+#include "aviones.h"
 
 class MainWindow;
 
@@ -34,8 +36,12 @@ class firstScn : public QGraphicsScene
 public:
     firstScn(MainWindow *parent = nullptr);
     int countRemainingBuques() const;
+
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+
+private slots:
+    void comprobarImpacto(qreal x);
 
 private:
     MainWindow *mainWindow;
@@ -43,7 +49,8 @@ private:
     QList<BuqueConDetalles> buques; // Lista que contiene los buques y sus detalles
     QList<QGraphicsRectItem*> cuadricula; // Crear una lista de rectángulos (son cuadrados porque miden lo mismo de lado y lado)
     int remainingClicks; // Contador para los clics válidos
-
+    Aviones *avionActual;
+    QPointF clickPos;
 };
 
 #endif // FIRSTSCN_H

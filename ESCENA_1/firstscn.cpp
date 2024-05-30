@@ -9,7 +9,7 @@
 #include <QLCDNumber>
 
 firstScn::firstScn(MainWindow *parent)
-    : QGraphicsScene(0, 0, 1350, 750, parent), mainWindow(parent), remainingClicks(50)
+    : QGraphicsScene(0, 0, 1350, 750, parent), mainWindow(parent), remainingClicks(50), avionActual(nullptr)
 {
     // Lista de detalles para los objetos Buque (posición, escala y ruta de la imagen)
     QList<BuqueDetalles> detallesBuques = {
@@ -17,7 +17,7 @@ firstScn::firstScn(MainWindow *parent)
         {QPointF(378, 160), 0.32, ":/buque_horizontal.png", 5},
         {QPointF(1191, 153), 0.39, ":/buque_vertical.png", 6},
         {QPointF(304, 379), 0.39, ":/buque_horizontal.png", 6},
-        {QPointF(891, 300), 0.39, ":/buque_vertical.png", 6},
+        {QPointF(891, 228), 0.39, ":/buque_vertical.png", 6},
         {QPointF(314, 527), 0.19, ":/buque_vertical.png", 3},
         {QPointF(904, 23), 0.19, ":/buque_horizontal.png", 3}
     };
@@ -27,7 +27,7 @@ firstScn::firstScn(MainWindow *parent)
         Buque *buque = new Buque(detalles.rutaImagen); // Usar la ruta de la imagen
         buque->setPos(detalles.posicion);
         buque->setScale(detalles.escala);
-        buque->setZValue(-1); // Colocar buques debajo del telón, el Zvalue sirve para establecer jerarquia de aparición
+        buque->setZValue(-1); // Colocar buques debajo del telón, el Zvalue sirve para establecer jerarquía de aparición
         addItem(buque);
         buques.append({buque, detalles});
     }
@@ -40,94 +40,109 @@ firstScn::firstScn(MainWindow *parent)
     addItem(telon);
 
     // Añadir la cuadrícula sobre el telón
-    for (int i = 0; i < 10; i = i + 1) { // los cuadrados en y
-        for (int j = 0; j < 18; j = j + 1) { // los cuadrados en x
+    for (int i = 0; i < 10; i = i + 1) { // Los cuadrados en y
+        for (int j = 0; j < 18; j = j + 1) { // Los cuadrados en x
             QGraphicsRectItem *rect = addRect(j * 75, i * 75, 75, 75, QPen(Qt::white));
             rect->setZValue(1); // Colocar la cuadrícula sobre el telón
             cuadricula.append(rect);
         }
     }
+
     if (mainWindow) {
         QLCDNumber *balas = mainWindow->findChild<QLCDNumber*>("balas");
         if (balas) {
             balas->display(50);
         }
     }
+
     if (mainWindow) {
         QLCDNumber *barcos = mainWindow->findChild<QLCDNumber *>("barcos");
         if (barcos) {
             barcos->display(countRemainingBuques()); // Mostrar la cantidad de buques restantes
         }
     }
+
+    connect(this, &firstScn::comprobarImpacto, this, &firstScn::comprobarImpacto);
 }
 
 void firstScn::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    QPointF clickPos = event->scenePos();
-    bool buqueEncontrado = false;
+    clickPos = event->scenePos();
 
     // Verificar si se han agotado los clics válidos
     if (remainingClicks <= 0) {
         return;
     }
 
-    // Encontrar el rectángulo en la cuadrícula que corresponde a la posición del clic
-    for (QGraphicsRectItem *rect : cuadricula) {
-        if (rect->contains(rect->mapFromScene(clickPos))) {
-            // Si el rectángulo ya es gris o rojo, no hacer nada
-            if (rect->brush().color() == Qt::gray || rect->brush().color() == Qt::red) {
+    if (!avionActual) {
+        avionActual = new Aviones(":/avion.png");
+        avionActual->setYPosition(clickPos.y() - 141); // Ajustar la posición Y del avión
+        addItem(avionActual);
+        avionActual->getAnimacion()->start();
+        connect(avionActual->getAnimacion(), &QPropertyAnimation::valueChanged, this, [this](const QVariant &value){
+            comprobarImpacto(value.toReal());
+        });
+        connect(avionActual->getAnimacion(), &QPropertyAnimation::finished, this, [this]{
+            removeItem(avionActual);
+            delete avionActual;
+            avionActual = nullptr;
+        });
+    }
+}
+
+void firstScn::comprobarImpacto(qreal x)
+{
+    QRectF rectBounds(clickPos.x() - 75 / 2, clickPos.y() - 75 / 2, 75, 75);
+
+    if (rectBounds.contains(x, clickPos.y())) {
+        // Cambiar el color del rectángulo y comprobar impacto con buques
+        for (QGraphicsRectItem *rect : cuadricula) {
+            if (rect->contains(rect->mapFromScene(clickPos))) {
+                if (rect->brush().color() == Qt::gray || rect->brush().color() == Qt::red) {
+                    return;
+                }
+
+                bool buqueEncontrado = false;
+
+                for (auto &buqueConDetalles : buques) {
+                    Buque *buque = buqueConDetalles.buque;
+                    BuqueDetalles &detalles = buqueConDetalles.detalles;
+                    if (buque->collidesWithItem(rect)) {
+                        detalles.vida--;
+                        qDebug() << "Vida del buque: " << detalles.vida;
+                        rect->setBrush(QBrush(Qt::gray));
+
+                        if (detalles.vida <= 0) {
+                            buque->setZValue(2);
+                        }
+                        buqueEncontrado = true;
+                        break;
+                    }
+                }
+
+                if (!buqueEncontrado) {
+                    rect->setBrush(QBrush(Qt::red));
+                }
+
+                remainingClicks--;
+
+                if (mainWindow) {
+                    QLCDNumber *balas = mainWindow->findChild<QLCDNumber*>("balas");
+                    if (balas) {
+                        balas->display(remainingClicks);
+                    }
+                }
+
+                if (mainWindow) {
+                    QLCDNumber *barcos = mainWindow->findChild<QLCDNumber *>("barcos");
+                    if (barcos) {
+                        barcos->display(countRemainingBuques());
+                    }
+                }
                 return;
             }
-
-            // Verificar si hay un buque en cualquier parte dentro del rectángulo de la cuadrícula
-            QRectF rectBounds = rect->sceneBoundingRect();
-            for (auto &buqueConDetalles : buques) {
-                Buque *buque = buqueConDetalles.buque;
-                BuqueDetalles &detalles = buqueConDetalles.detalles;
-                if (buque->collidesWithItem(rect)) {
-                    // Reducir la vida del buque en 1
-                    detalles.vida--;
-                    qDebug() << "Vida del buque: " << detalles.vida;
-
-                    // Cambiar el color del rectángulo a gris
-                    rect->setBrush(QBrush(Qt::gray));
-
-                    // Si la vida del buque llega a 0, cambiar su ZValue a 1
-                    if (detalles.vida <= 0) {
-                        buque->setZValue(2); // Colocar el buque sobre la cuadrícula
-                    }
-                    buqueEncontrado = true;
-                    break;
-                }
-            }
-
-            // Si no se encontró ningún buque en la posición del clic, cambiar el color del rectángulo a rojo
-            if (!buqueEncontrado) {
-                rect->setBrush(QBrush(Qt::red));
-            }
-
-            // Disminuir el contador de clics válidos
-            remainingClicks--; // contiene el numero de balas y las disminuye
-
-            if (mainWindow) {
-                QLCDNumber *balas = mainWindow->findChild<QLCDNumber*>("balas");
-                if (balas) {
-                    balas->display(remainingClicks);
-                }
-            }
-
-            if (mainWindow) {
-                QLCDNumber *barcos = mainWindow->findChild<QLCDNumber *>("barcos");
-                if (barcos) {
-                    barcos->display(countRemainingBuques()); // Mostrar la cantidad de buques restantes
-                }
-            }
-            return;
         }
     }
-
-
-    QGraphicsScene::mousePressEvent(event);
 }
 
 int firstScn::countRemainingBuques() const {
