@@ -4,13 +4,31 @@
 #include <QGraphicsRectItem>
 #include <QGraphicsView>
 #include <QMainWindow>
-#include "mainwindow.h"
 #include <QDebug>
 #include <QLCDNumber>
+#include <QTimer>
 
 firstScn::firstScn(MainWindow *parent)
-    : QGraphicsScene(0, 0, 1350, 750, parent), mainWindow(parent), remainingClicks(50), avionActual(nullptr)
+    : QGraphicsScene(0, 0, 1350, 750), mainWindow(parent), remainingClicks(50), avionActual(nullptr), misilActual(nullptr), valHumos(false)
 {
+    resetScene();
+}
+
+firstScn::~firstScn() {
+    // Limpia todos los elementos de la escena
+    for (auto item : items()) {
+        removeItem(item);
+        delete item;
+    }
+}
+
+void firstScn::resetScene() {
+    clear();
+    remainingClicks = 50;
+    avionActual = nullptr;
+    misilActual = nullptr;
+    valHumos = false;
+
     // Lista de detalles para los objetos Buque (posición, escala y ruta de la imagen)
     QList<BuqueDetalles> detallesBuques = {
         {QPointF(66, 3), 0.39, ":/buque_vertical.png", 6},
@@ -67,79 +85,160 @@ firstScn::firstScn(MainWindow *parent)
 
 void firstScn::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    clickPos = event->scenePos();
-
-    // Verificar si se han agotado los clics válidos
-    if (remainingClicks <= 0) {
-        return;
-    }
+    qDebug() << "Mouse press event at:" << event->scenePos();
 
     if (!avionActual) {
-        avionActual = new Aviones(":/avion.png");
-        avionActual->setYPosition(clickPos.y() - 141); // Ajustar la posición Y del avión
-        addItem(avionActual);
-        avionActual->getAnimacion()->start();
-        connect(avionActual->getAnimacion(), &QPropertyAnimation::valueChanged, this, [this](const QVariant &value){
-            comprobarImpacto(value.toReal());
-        });
-        connect(avionActual->getAnimacion(), &QPropertyAnimation::finished, this, [this]{
-            removeItem(avionActual);
-            delete avionActual;
-            avionActual = nullptr;
-        });
+        clickPos = event->scenePos();
+        qDebug() << "Click position:" << clickPos;
+
+        // Verificar si el recuadro ya está revelado
+        for (QGraphicsRectItem *rect : cuadricula) {
+            if (rect->contains(rect->mapFromScene(clickPos))) {
+                if (rect->brush().color() == QColor("#004C84") || rect->brush().color() == Qt::red) {
+                    qDebug() << "Recuadro ya revelado, no se puede hacer clic nuevamente.";
+                    return;
+                }
+            }
+        }
+
+        // Verificar si se han agotado los clics válidos
+        if (remainingClicks <= 0) {
+            return;
+        }
+        if (countRemainingBuques() <= 0) {
+            emit gameWon(); // Emitir la señal
+            return;
+        }
+
+        if (!avionActual && !misilActual) {
+            misilActual = new Misil(":/misil.png");
+            misilActual->setXyYPosition(clickPos.x(), clickPos.y());
+
+            avionActual = new Aviones(":/avion.png");
+            qreal avionY = (static_cast<int>(clickPos.y()) / 75) * 75 + 5;
+            avionActual->setYPosition(avionY-90); // Ajustar la posición Y del avión
+            avionActual->setZValue(5);
+            addItem(avionActual);
+            qDebug() << "Avion añadido en la posición:" << avionActual->pos();
+
+            QTimer *timer = new QTimer(this);
+            connect(timer, &QTimer::timeout, this, [this]() {
+                if (avionActual) {
+                    comprobarImpacto(avionActual->x());
+                }
+            });
+            timer->start(50); // Comprueba el impacto cada 50ms
+
+            connect(avionActual, &Aviones::animacionTerminada, this, [this, timer] {
+                qDebug() << "Animación del avión terminada";
+                removeItem(avionActual);
+
+                delete avionActual;
+                avionActual = nullptr;
+                timer->stop();
+                timer->deleteLater();
+            });
+        }
     }
 }
+
 
 void firstScn::comprobarImpacto(qreal x)
 {
     QRectF rectBounds(clickPos.x() - 75 / 2, clickPos.y() - 75 / 2, 75, 75);
 
     if (rectBounds.contains(x, clickPos.y())) {
-        // Cambiar el color del rectángulo y comprobar impacto con buques
-        for (QGraphicsRectItem *rect : cuadricula) {
-            if (rect->contains(rect->mapFromScene(clickPos))) {
-                if (rect->brush().color() == Qt::gray || rect->brush().color() == Qt::red) {
-                    return;
-                }
+        manejarImpactoMisil();
+    }
+}
 
-                bool buqueEncontrado = false;
+void firstScn::manejarImpactoMisil()
+{
+    if (!misilActual) return;
 
-                for (auto &buqueConDetalles : buques) {
-                    Buque *buque = buqueConDetalles.buque;
-                    BuqueDetalles &detalles = buqueConDetalles.detalles;
-                    if (buque->collidesWithItem(rect)) {
-                        detalles.vida--;
-                        qDebug() << "Vida del buque: " << detalles.vida;
-                        rect->setBrush(QBrush(Qt::gray));
+    misilActual->setZValue(3);
+    addItem(misilActual);
+    misilActual->getAnimacion()->start();
 
-                        if (detalles.vida <= 0) {
-                            buque->setZValue(2);
-                        }
-                        buqueEncontrado = true;
-                        break;
-                    }
-                }
+    connect(misilActual->getAnimacion(), &QPropertyAnimation::finished, this, [this] {
+        if (misilActual) {
+            removeItem(misilActual);
+            delete misilActual;
+            misilActual = nullptr;
+        }
+    });
 
-                if (!buqueEncontrado) {
-                    rect->setBrush(QBrush(Qt::red));
-                }
+    // Cambiar el color del rectángulo y comprobar impacto con buques
+    for (QGraphicsRectItem *rect : cuadricula) {
+        if (rect->contains(rect->mapFromScene(clickPos))) {
+            if (rect->brush().color() == QColor("#004C84") || rect->brush().color() == Qt::red) {
+                auto currentClickPos = clickPos; // Capturar la posición actual del clic
 
-                remainingClicks--;
+                if(rect->brush().color() == QColor("#004C84")){
+                    // Calcular la posición ajustada del humo
+                    qreal humoX = (static_cast<int>(currentClickPos.x()) / 75) * 75 + 5;
+                    qreal humoY = (static_cast<int>(currentClickPos.y()) / 75) * 75 + 5;
 
-                if (mainWindow) {
-                    QLCDNumber *balas = mainWindow->findChild<QLCDNumber*>("balas");
-                    if (balas) {
-                        balas->display(remainingClicks);
-                    }
-                }
-
-                if (mainWindow) {
-                    QLCDNumber *barcos = mainWindow->findChild<QLCDNumber *>("barcos");
-                    if (barcos) {
-                        barcos->display(countRemainingBuques());
-                    }
+                    // Añadir humo en la posición ajustada
+                    Humo *humo = new Humo(":/humo.png");
+                    humo->setPos(humoX, humoY);
+                    humo->setScale(0.15); // Escala del humo
+                    humo->setZValue(4);
+                    addItem(humo);
                 }
                 return;
+            }
+
+            bool buqueEncontrado = false;
+
+            for (auto &buqueConDetalles : buques) {
+                Buque *buque = buqueConDetalles.buque;
+                BuqueDetalles &detalles = buqueConDetalles.detalles;
+                if (buque->collidesWithItem(rect)) {
+                    detalles.vida--;
+                    qDebug() << "Vida del buque: " << detalles.vida;
+                    rect->setBrush(QBrush(QColor("#004C84")));
+
+                    if (detalles.vida <= 0) {
+                        buque->setZValue(2);
+                        valHumos = true;
+                        // Eliminar humos en los recuadros del buque destruido
+                        for (QGraphicsRectItem *rectHumo : cuadricula) {
+                            if (buque->collidesWithItem(rectHumo)) {
+                                QList<QGraphicsItem*> itemsInRect = items(rectHumo->rect().translated(rectHumo->pos()));
+                                for (QGraphicsItem *item : itemsInRect) {
+                                    Humo *humo = dynamic_cast<Humo*>(item);
+                                    if (humo) {
+                                        removeItem(humo);
+                                        delete humo;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    buqueEncontrado = true;
+                    break;
+                }
+            }
+
+            if (!buqueEncontrado) {
+                rect->setBrush(QBrush(Qt::red));
+            }
+
+            remainingClicks--;
+
+            if (mainWindow) {
+                QLCDNumber *balas = mainWindow->findChild<QLCDNumber*>("balas");
+                if (balas) {
+                    balas->display(remainingClicks);
+                }
+            }
+
+            if (mainWindow) {
+                QLCDNumber *barcos = mainWindow->findChild<QLCDNumber *>("barcos");
+                if (barcos) {
+                    barcos->display(countRemainingBuques());
+                }
             }
         }
     }

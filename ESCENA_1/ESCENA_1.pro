@@ -6,16 +6,32 @@ CONFIG += c++17
 
 SOURCES += \
     firstscn.cpp \
+    humo.cpp \
     main.cpp \
     mainwindow.cpp \
     buque.cpp \
-    aviones.cpp
+    aviones.cpp \
+    Bullet.cpp \
+    Enemy.cpp \
+    Game.cpp \
+    Health.cpp \
+    Player.cpp \
+    Score.cpp \
+    misil.cpp
 
 HEADERS += \
     firstscn.h \
+    humo.h \
     mainwindow.h \
     buque.h \
-    aviones.h
+    aviones.h \
+    misil.h \
+    Bullet.h \
+    Enemy.h \
+    Game.h \
+    Health.h \
+    Player.h \
+    Score.h
 
 FORMS += \
     mainwindow.ui

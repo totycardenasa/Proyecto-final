@@ -3,24 +3,28 @@
 
 #include <QGraphicsPixmapItem>
 #include <QPropertyAnimation>
+#include <QTimer>
 
 class Aviones : public QObject, public QGraphicsPixmapItem
 {
     Q_OBJECT
-    Q_PROPERTY(qreal x READ x WRITE setX)
 
 public:
     Aviones(const QString &filePath, QGraphicsItem *parent = nullptr);
-
     QPropertyAnimation* getAnimacion() const;
-    void setYPosition(qreal y); // Método para establecer la posición Y del avión
+    void setYPosition(qreal y);
+
+signals:
+    void animacionTerminada();
 
 public slots:
-    void setX(qreal x);
+    void actualizarPosicion();
 
 private:
     QPixmap imagenAvion;
-    QPropertyAnimation *animacion;
+    QTimer *timer;
+    qreal velocidad;
+    qreal aceleracion;
 };
 
 #endif // AVIONES_H
