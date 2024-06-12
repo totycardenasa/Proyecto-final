@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>fondo_azul.jpg</file>
+        <file>buque_vertical.png</file>
+        <file>buque_horizontal.png</file>
+        <file>avion.png</file>
+        <file>misil.png</file>
+        <file>humo.png</file>
+        <file>background.jpg</file>
+        <file>enemyplane.png</file>
+        <file>planeplayer.png</file>
+        <file>rocket.png</file>
+    </qresource>
+</RCC>
